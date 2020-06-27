@@ -9,6 +9,16 @@ import io.gatling.http.Predef._
 
 class ComputerWorld extends Simulation {
 
+  private def getProperty(propertyName: String, defaultValue: String) = {
+    Option(System.getenv(propertyName))
+      .orElse(Option(System.getProperty(propertyName)))
+      .getOrElse(defaultValue)
+  }
+
+  def userCount: Int = getProperty("USERS", "20").toInt
+  def rampDuration: Int = getProperty("RAMP_DURATION", "15").toInt
+  def testDuration: Int = getProperty("DURATION", "100").toInt
+
   val httpProtocol = http
     .baseUrl("http://computer-database.gatling.io")
     .acceptHeader("""text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8""")
@@ -38,6 +48,6 @@ class ComputerWorld extends Simulation {
       .check(substring("${homeComputer}")))
 
   setUp(computerDbScn.inject(
-    constantUsersPerSec(2) during(1 minute)
-  ).protocols(httpProtocol)) 
+    rampUsers(userCount) during (rampDuration second)
+  ).protocols(httpProtocol)).maxDuration(testDuration seconds)
 }
